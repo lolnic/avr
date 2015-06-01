@@ -7,6 +7,10 @@
 rcall lcd_init
 rjmp eof
 
+.dseg
+	turn: .db "|/-",0
+.cseg
+
 .equ LCDCONTROLPORT = PORTA
 .equ LCDCONTROLDDR = DDRA
 
@@ -31,6 +35,9 @@ rjmp eof
 	rcall lcd_data
 	rcall lcd_wait
 	pop r16
+.endmacro
+.macro lcd_clear
+	do_lcd_command 0b00000001
 .endmacro
 
 .macro lcd_lte_99 ; data_reg
@@ -83,6 +90,28 @@ lcd_init:
 	do_lcd_command 0b00000001 ; clear display
 	do_lcd_command 0b00000110 ; increment, no display shift
 	do_lcd_command 0b00001110 ; Cursor on, bar, no blink
+
+
+
+	; create backslash character
+	do_lcd_command 0b01000000
+					do_lcd_data 0b00010000
+	do_lcd_command 0b01000001
+					do_lcd_data 0b00001000
+	do_lcd_command 0b01000010
+					do_lcd_data 0b00001000
+	do_lcd_command 0b01000011
+					do_lcd_data 0b00000100
+	do_lcd_command 0b01000100
+					do_lcd_data 0b00000100
+	do_lcd_command 0b01000101
+					do_lcd_data 0b00000010
+	do_lcd_command 0b01000110
+					do_lcd_data 0b00000010
+	do_lcd_command 0b01000111
+					do_lcd_data 0b00000001
+	lcd_clear
+
 	pop r16
 	ret
 

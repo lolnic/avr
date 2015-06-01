@@ -19,6 +19,8 @@ ldi r16, 12
 ldi r17, 9
 call lcd_time
 
+;lcd_clear
+
 
 halt:
 	rjmp halt
