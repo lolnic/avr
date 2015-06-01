@@ -15,23 +15,53 @@ rjmp eof
 
 .include "m2560def.inc"
 
-.macro do_lcd_command
+.macro do_lcd_command ; command
 	ldi r16, @0
 	rcall lcd_command
 	rcall lcd_wait
 .endmacro
-.macro do_lcd_data
+.macro do_lcd_data ; data
 	ldi r16, @0
 	rcall lcd_data
 	rcall lcd_wait
 .endmacro
-.macro do_lcd_data_reg
+.macro do_lcd_data_reg ; data_reg
 	push r16
 	mov r16, @0
 	rcall lcd_data
 	rcall lcd_wait
 	pop r16
 .endmacro
+
+.macro lcd_lte_99 ; data_reg
+	.def data_reg = @0
+	; tens
+	push data_reg
+	push r31
+	clr r31
+	; while data_reg >= 10
+	count_loop:
+		cpi data_reg, 10
+		brlt end_count_loop
+		inc r31
+		subi data_reg, 10
+		rjmp count_loop
+	end_count_loop:
+	subi r31, -'0'
+	subi data_reg, -'0'
+	do_lcd_data_reg r31
+	do_lcd_data_reg data_reg
+	pop data_reg
+	pop r31
+	.undef data_reg
+.endmacro
+
+lcd_time: ; r16 = minutes
+	      ; r17 = seconds
+	lcd_lte_99 r16
+	do_lcd_data ':'
+	lcd_lte_99 r17
+	ret
 
 lcd_init:
 	push r16
