@@ -39,6 +39,18 @@ rjmp eof
 .macro lcd_clear
 	do_lcd_command 0b00000001
 .endmacro
+.macro lcd_bot_left
+	do_lcd_command 0b11000000
+.endmacro
+.macro lcd_top_left
+	do_lcd_command 0b10000000
+.endmacro
+.macro lcd_top_right
+	do_lcd_command (0b10000000 | 15)
+.endmacro
+.macro lcd_bot_right
+	do_lcd_command (0b10000000 | 55)
+.endmacro
 
 .macro lcd_lte_99 ; data_reg
 	.def data_reg = @0
@@ -95,21 +107,14 @@ lcd_init:
 
 	; create backslash character
 	do_lcd_command 0b01000000
-					do_lcd_data 0b00010000
-	do_lcd_command 0b01000001
-					do_lcd_data 0b00001000
-	do_lcd_command 0b01000010
-					do_lcd_data 0b00001000
-	do_lcd_command 0b01000011
-					do_lcd_data 0b00000100
-	do_lcd_command 0b01000100
-					do_lcd_data 0b00000100
-	do_lcd_command 0b01000101
-					do_lcd_data 0b00000010
-	do_lcd_command 0b01000110
-					do_lcd_data 0b00000010
-	do_lcd_command 0b01000111
-					do_lcd_data 0b00000001
+					do_lcd_data 0b00000
+					do_lcd_data 0b10000
+					do_lcd_data 0b01000
+					do_lcd_data 0b00100
+					do_lcd_data 0b00010
+					do_lcd_data 0b00001
+					do_lcd_data 0b00000
+					do_lcd_data 0b00000
 	lcd_clear
 
 	pop r16
