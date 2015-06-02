@@ -1,0 +1,47 @@
+* LCD (module)
+	- screen
+	- backlight
+		- own timer
+* turntable (module)
+	- timer tick
+* keypad (module)
+	- poll tick
+	- callback
+* magnetron (module)
+	- motor (module)
+	- LED (module)
+	- timer tick
+* pushbuttons (module)
+	- interrupt
+	- callback
+* sound (module)
+	- own timer
+* main (module)
+	- responsible for overall state of the microwave
+		- open/closed
+		- mode
+		- etc.
+	- timer 250ms
+	- polling loop
+		- render LCD
+
+sub main:
+	set timer callback to tmcb
+	start timer 250ms
+	set keypad callback to kpcb
+	set pushbutton callback to pbcb
+	forever:
+		poll keypad
+		render lcd
+
+sub tmcb:
+	poke turntable
+	poke magnetron
+
+sub kpcb:
+	behaviour depends on mode
+
+sub pbcb:
+	opens and closes the door
+	behaviour also depends on mode
+
