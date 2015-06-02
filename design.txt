@@ -3,17 +3,20 @@
 	- backlight
 		- own timer
 * turntable (module)
-	- timer tick
+	- turntable_250ms_tick
+	- turntable_start
+	- turntable_stop
 * keypad (module)
-	- poll tick
-	- callback
+	- keypad_poll_once
+	- keypad_set_callback (macro)
 * magnetron (module)
 	- motor (module)
 	- LED (module)
-	- timer tick
+	- magnetron_250ms_tick
+	- magnetron_set_power
 * pushbuttons (module)
 	- interrupt
-	- callback
+	- pushbutton_set_callback
 * sound (module)
 	- own timer
 * main (module)
