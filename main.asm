@@ -6,6 +6,7 @@ jmp Timer0OVF ; Jump to the interrupt handler for
 ; Timer0 overflow.
 
 includes:
+.include "macro.asm"
 .include "lcd.asm"
 .include "keypad.asm"
 .include "timer.asm"
@@ -15,6 +16,7 @@ jmp main
 .def minutes = r21
 .def seconds = r22
 .def lcd_dirty = r26
+.def numdigits = r17
 .equ ENTRY = 1
 .equ RUNNING = 2
 .equ PAUSED = 3
@@ -24,7 +26,7 @@ jmp main
 start_dseg:
 .byte 4
 digits: .byte 4
-numdigits: .byte 1
+numdigits_mem: .byte 1
 mode_mem: .byte 1
 lcd_dirty_mem: .byte 1
 minutes_mem: .byte 1
@@ -33,11 +35,14 @@ end_dseg:
 .cseg
 
 main:
+	; Init callbacks
 	set_keypad_callback key_pressed
 	set_timer_callback timer_fired
 
+
+	; zero memory
 	ldi zh, high(start_dseg)
-	ldi zl, low(end_dseg)
+	ldi zl, low(start_dseg)
 	ldi r16, 0
 	loop:
 		st Z+, r16 
@@ -46,31 +51,30 @@ main:
 		jmp loop
 	memory_wiped:
 
-	ldi r16, 1
-	sts lcd_dirty_mem, r16
+	; The LCD needs to be rendered again
+	ldi lcd_dirty, 1
+	store lcd_dirty
 
-	ldi r16, 0
-	sts numdigits, r16
-
+	; we start in entry mode
 	ldi mode, ENTRY
-	sts mode_mem, mode
-
-	call set_min_sec
+	store mode
 
 	poll_loop:
+		; Poll the keypad
 		call poll_keypad_once
-		lds lcd_dirty, lcd_dirty_mem
+
+		; Check if the LCD needs to be rendered again
+		load lcd_dirty
 		cpi lcd_dirty, 1
 		breq render_lcd
 		jmp poll_loop
 
 		render_lcd:
 			lcd_clear
-			clr lcd_dirty
-			sts lcd_dirty_mem, lcd_dirty
 
-			lds minutes, minutes_mem
-			lds seconds, seconds_mem
+			load minutes
+			load seconds
+
 			push r16
 			push r17
 			mov r16, minutes
@@ -78,11 +82,93 @@ main:
 			call lcd_time
 			pop r17
 			pop r16
+
+			clr lcd_dirty
+			store lcd_dirty
 			jmp poll_loop
 		
 
+add_minute:
+	push minutes
+	load minutes
+	inc minutes
+	store minutes
+	pop minutes
+	ret
+
+start:
+	push r16
+	push minutes
+	push seconds
+	push mode
+	clr r16
+
+	load minutes
+	load seconds
+
+	cp seconds, r16
+	cpc minutes, r16
+	brne go
+	rcall add_minute
+	go:
+	ldi mode, RUNNING
+	store mode
+	call timer_on
+	pop mode
+	pop r16
+	pop seconds
+	pop minutes
+	ret
+
+stop_entry:
+	push numdigits
+	clr numdigits
+	store numdigits
+	call set_min_sec
+	pop numdigits
+	ret
+
+unpause:
+	push mode
+	ldi mode, RUNNING
+	store mode
+	call timer_on
+	pop mode
+	ret
+
+restart:
+	push numdigits
+	push mode
+	clr numdigits
+	store numdigits
+	call set_min_sec
+	ldi mode, ENTRY
+	store mode
+	pop mode
+	pop numdigits
+	ret
+
+paused_key_pressed:
+	cpi r16, '*'
+	brne paused_notstar
+	call unpause
+	paused_notstar:
+	cpi r16, '#'
+	brne paused_nothash
+	call restart
+	paused_nothash:
+	ret
+
+finished_key_pressed:
+	ret
+
+; Callback for when the keypad is pressed.
+; The ascii value of the key hit is in r16
 key_pressed:
-	lds mode, mode_mem
+	ldi lcd_dirty, 1
+	store lcd_dirty
+	; Jump to subroutine based on mode
+	load mode
 	cpi mode, ENTRY
 	breq entry_key_pressed
 	cpi mode, RUNNING
@@ -92,53 +178,78 @@ key_pressed:
 	jmp finished_key_pressed
 
 entry_key_pressed:
-	push r17
+	push numdigits
 	push xl
 	push xh
 	push r18
-	lds r17, numdigits
+	push mode
+	load numdigits
 
 	cpi r16, '0'
 	brlt entry_nan
 	cpi r16, '9'+1
 	brge entry_nan
 
-	;do_lcd_data 'a'
-	cpi r17, 4
+	cpi numdigits, 4
 	breq end_entry_key
-	;do_lcd_data 'b'
 
 	ldi xl, low(digits)
 	ldi xh, high(digits)
 	clr r18
-	add xl, r17
+	add xl, numdigits
 	adc xh, r18
-	inc r17
+	inc numdigits
 	subi r16, '0'
 	st X, r16
-	sts numdigits, r17
+	store numdigits
 	call set_min_sec
 
 	jmp end_entry_key
+
 	entry_nan:
-	call timer_on
+	
+	cpi r16, '*'
+	brne entry_notstar
+	rcall start
+
+	entry_notstar:
+	cpi r16, '#'
+	brne entry_nothash
+	rcall stop_entry
+
+	entry_nothash:
 
 	end_entry_key:
 	ldi lcd_dirty, 1
-	sts lcd_dirty_mem, lcd_dirty
+	store lcd_dirty
+
+	pop mode
 	pop r18
 	pop xh
 	pop xl
 	pop r17
 	ret
 
+pause:
+	push mode
+	call timer_off
+	ldi mode, PAUSED
+	store mode
+	pop mode
+	ret
+
 running_key_pressed:
-	ret
+	cpi r16, '*'
+	brne running_notstar
+	call add_minute
+	
+	running_notstar:
+	cpi r16, '#'
+	brne running_nothash
+	rcall pause
 
-paused_key_pressed:
-	ret
+	running_nothash:
 
-finished_key_pressed:
 	ret
 
 set_min_sec: ; arg r17 = number of digits in time
@@ -148,12 +259,11 @@ set_min_sec: ; arg r17 = number of digits in time
 	push yh
 	push r0
 
-	do_lcd_data 'm'
 	ldi yl, low(digits)
 	ldi yh, high(digits)
 
 	ldi r24, 4
-	sub r24, r17
+	sub r24, numdigits
 	sub yl, r24
 	sbci yh, 0
 	clr minutes
@@ -162,18 +272,14 @@ set_min_sec: ; arg r17 = number of digits in time
 	ldi r18, 10
 
 	ldd r24, Y+0
-	;lcd_lte_99 r24
 	mul r24, r18
 	mov minutes, r0
 	ldd r24, Y+1
-	;lcd_lte_99 r24
 	add minutes, r24
 	ldd r24, Y+2
-	;lcd_lte_99 r24
 	mul r24, r18
 	mov seconds, r0
 	ldd r24, Y+3
-	;lcd_lte_99 r24
 	add seconds, r24
 
 	sts minutes_mem, minutes
@@ -188,22 +294,27 @@ set_min_sec: ; arg r17 = number of digits in time
 
 timer_fired:
 	ldi lcd_dirty, 1
-	sts lcd_dirty_mem, lcd_dirty
-	lds minutes, minutes_mem
-	lds seconds, seconds_mem
+	store lcd_dirty
+
+	load minutes
+	load seconds
 	cpi seconds, 0
 	breq do_minutes
 	dec seconds
-	sts seconds_mem, seconds
+	store seconds
 	ret
 	do_minutes:
 	cpi minutes, 0
 	breq timer_zero
 	ldi seconds, 59
 	dec minutes
-	sts minutes_mem, minutes
-	sts seconds_mem, seconds
+	store minutes
+	store seconds
 	ret
 	timer_zero:
 	call timer_off
+	push numdigits
+	clr numdigits
+	store numdigits
+	pop numdigits
 	ret

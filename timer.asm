@@ -126,6 +126,7 @@ timer_off:
 	out TCCR0B, temp
 	sts TIMSK0, temp
 	pop temp
+	ret
 
 
 
