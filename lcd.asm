@@ -5,7 +5,7 @@
 ;  * The stack is initialised
 
 rcall lcd_init
-rjmp eof
+rjmp lcd_eof
 
 .dseg
 	turn: .db "|/-",0
@@ -200,4 +200,4 @@ sleep_5ms:
 	rcall sleep_1ms
 	ret
 
-eof:
+lcd_eof:
