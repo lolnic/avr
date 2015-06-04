@@ -1,6 +1,6 @@
 .include "m2560def.inc"
 
-.equ OVERFLOWS_PER_CALLBACK = 7812
+.equ OVERFLOWS_PER_CALLBACK = 7812/4
 .def temp =r16
 
 

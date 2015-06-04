@@ -10,6 +10,7 @@ includes:
 .include "lcd.asm"
 .include "keypad.asm"
 .include "timer.asm"
+.include "turntable.asm"
 jmp main
 
 .def mode = r20
@@ -17,6 +18,7 @@ jmp main
 .def seconds = r22
 .def lcd_dirty = r26
 .def numdigits = r17
+.def timer_count = r17
 .equ ENTRY = 1
 .equ RUNNING = 2
 .equ PAUSED = 3
@@ -31,6 +33,7 @@ mode_mem: .byte 1
 lcd_dirty_mem: .byte 1
 minutes_mem: .byte 1
 seconds_mem: .byte 1
+timer_count_mem: .byte 1
 end_dseg:
 .cseg
 
@@ -82,6 +85,11 @@ main:
 			call lcd_time
 			pop r17
 			pop r16
+			
+			lcd_top_right
+			turntable_status r17
+			do_lcd_data_reg r17
+
 
 			clr lcd_dirty
 			store lcd_dirty
@@ -114,6 +122,7 @@ start:
 	ldi mode, RUNNING
 	store mode
 	call timer_on
+	call turntable_start
 	pop mode
 	pop r16
 	pop seconds
@@ -133,6 +142,7 @@ unpause:
 	ldi mode, RUNNING
 	store mode
 	call timer_on
+	call turntable_start
 	pop mode
 	ret
 
@@ -233,6 +243,7 @@ entry_key_pressed:
 pause:
 	push mode
 	call timer_off
+	call turntable_stop
 	ldi mode, PAUSED
 	store mode
 	pop mode
@@ -293,9 +304,24 @@ set_min_sec: ; arg r17 = number of digits in time
 	ret
 
 timer_fired:
+	call turntable_250ms_tick
 	ldi lcd_dirty, 1
 	store lcd_dirty
 
+	; Only continue if it's been one second
+	push timer_count
+	load timer_count
+	inc timer_count
+	store timer_count
+	cpi timer_count, 4
+	breq one_second
+	pop timer_count
+	ret
+
+	one_second:
+	clr timer_count
+	store timer_count
+	pop timer_count
 	load minutes
 	load seconds
 	cpi seconds, 0
@@ -313,6 +339,7 @@ timer_fired:
 	ret
 	timer_zero:
 	call timer_off
+	call turntable_stop
 	push numdigits
 	clr numdigits
 	store numdigits
