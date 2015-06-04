@@ -25,11 +25,41 @@ call init_keypad
 jmp keypad_eof
 
 .macro call_keypad_callback; char_pressed
+	push r16
+	mov r16, @0
 	push r17
-	ser r17
-	out DDRC, r17
-	out PORTC, @0
+	push zh
+	push zl
+	
+	clr r17
+	lds zh, keypad_callback
+	lds zl, keypad_callback+1
+
+	cp zl, r17
+	cpc zh, r17
+	breq nocall
+
+	icall
+	nocall:
+	pop zl
+	pop zh
 	pop r17
+	pop r16
+.endmacro
+
+.macro set_keypad_callback; label
+	push zh
+	push zl
+	push r16
+	ldi zh, high(keypad_callback)
+	ldi zl, low(keypad_callback)
+	ldi r16, high(@0)
+	st Z+, r16
+	ldi r16, low(@0)
+	st Z, r16
+	pop r16
+	pop zl
+	pop zh
 .endmacro
 
 init_keypad:

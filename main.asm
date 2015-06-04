@@ -3,10 +3,13 @@
 .include "keypad.asm"
 
 .cseg
-ser r17
-out DDRC, r17
-ldi r17, 0b01010101
-out PORTC, r17
+
+set_keypad_callback key_pressed
+
 main:
 	call poll_once
 	jmp main
+
+key_pressed:
+	do_lcd_data_reg r16
+	ret
