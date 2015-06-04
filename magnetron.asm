@@ -4,9 +4,11 @@
 
 .dseg
 	power_level_mem: .byte 1
+	tick_mem: .byte 1
 .cseg
 
 .def power_level = r25
+.def tick = r26
 .equ LO = 1
 .equ MD = 2
 .equ HI = 3
@@ -17,6 +19,8 @@ magnetron_init:
 	ldi r16, LO
 	call magnetron_set_power_level
 	call motor_off
+	clr tick
+	store tick
 	jmp magnetron_eof
 
 magnetron_set_power_level: ; r16 = new power level
@@ -34,6 +38,38 @@ magnetron_set_power_level: ; r16 = new power level
 	lo_: led_set_lights 2
 	end_set_power_level:
 	pop power_level
+	ret
+
+magnetron_250ms_tick:
+	push tick
+	push power_level
+	load power_level
+	cpi power_level, HI
+	breq on_tick
+
+	load tick
+	cp tick, power_level
+	brlt on_tick
+	jmp off_tick
+
+	on_tick:
+	call motor_on
+	jmp magnetron_tick_return
+
+	off_tick:
+	call motor_off
+
+	magnetron_tick_return:
+	inc tick
+	cpi tick, 4
+	breq reset_tick
+	jmp done_tick
+	reset_tick:
+	clr tick
+	done_tick:
+	store tick
+	pop power_level
+	pop tick 
 	ret
 
 magnetron_on:

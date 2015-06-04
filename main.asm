@@ -436,6 +436,7 @@ set_min_sec: ; arg r17 = number of digits in time
 
 timer_fired:
 	call turntable_250ms_tick
+	call magnetron_250ms_tick
 	ldi lcd_dirty, 1
 	store lcd_dirty
 
