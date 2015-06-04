@@ -121,6 +121,7 @@ turntable_250ms_tick:
 	ret
 
 turntable_start:
+	call turntable_switch_direction
 	push on
 	load on
 	ldi on, 1
@@ -128,30 +129,34 @@ turntable_start:
 	pop on
 	ret
 
-turntable_stop:
-	push on
+turntable_switch_direction:
 	push direction
 	push waiting
-	load on
-	load direction
-	load waiting
-
-	clr on
-	store on
 
 	clr waiting
 	store waiting
 
+	load direction
 	cpi direction, FORWARDS
 	breq go_back
 	ldi direction, FORWARDS
-	jmp end_turntable_stop
+	jmp end_turntable_switch
 	go_back: ldi direction, BACKWARDS
 
-	end_turntable_stop:
+	end_turntable_switch:
 	store direction
 	pop waiting
 	pop direction
+
+	ret
+
+turntable_stop:
+	push on
+	load on
+
+	clr on
+	store on
+
 	pop on
 	ret
 
