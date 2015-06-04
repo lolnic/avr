@@ -30,7 +30,7 @@ jmp keypad_eof
 	push r17
 	push zh
 	push zl
-	
+
 	clr r17
 	lds zh, keypad_callback
 	lds zl, keypad_callback+1
@@ -69,7 +69,7 @@ init_keypad:
 	pop temp1
 	ret
 
-poll_once:
+poll_keypad_once:
 	push row
 	push col
 	push rmask

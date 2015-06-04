@@ -13,7 +13,6 @@ timer_callback:
 
 
 .cseg
-rcall timer_on
 jmp timer_eof
 
 .macro clear
