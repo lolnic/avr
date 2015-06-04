@@ -20,8 +20,17 @@ main:
 	jmp main
 
 key_pressed:
-	do_lcd_data_reg r16
+	cpi r16, '*'
+	breq start_timer
+	cpi r16, '#'
+	breq stop_timer
 	ret
+	start_timer:
+		rcall timer_on
+		ret
+	stop_timer:
+		rcall timer_off
+		ret
 
 timer_fired:
 	do_lcd_data 0

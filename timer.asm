@@ -13,7 +13,7 @@ timer_callback:
 
 
 .cseg
-rcall init_timer
+rcall timer_on
 jmp timer_eof
 
 .macro clear
@@ -109,9 +109,10 @@ Timer0OVF: ; interrupt subroutine to Timer0
 	;pop temp
 	reti ; Return from the interrupt.
 
-init_timer:
+timer_on:
 	push temp
 
+	clear TempCounter
 	ldi temp, 0b00000010
 	out TCCR0B, temp ; Prescaling value=8
 	ldi temp, 1<<TOIE0 ; =278 microseconds
@@ -119,5 +120,15 @@ init_timer:
 
 	pop temp
 	ret
+
+timer_off:
+	push temp
+	ldi temp, 0
+	out TCCR0B, temp
+	sts TIMSK0, temp
+	pop temp
+
+
+
 
 timer_eof:
