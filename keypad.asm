@@ -12,12 +12,12 @@
 .equ INITCOLMASK = 0xEF ; scan from the rightmost column,
 .equ INITROWMASK = 0x01 ; scan from the top row
 .equ ROWMASK = 0x0F ; for obtaining input from Port D
-.equ KEYPADPORT = PORTL
-.equ KEYPADPIN = PINL
-.equ KEYPADDDR = DDRL
+.equ KEYPADPORT = PORTK
+.equ KEYPADPIN = PINK
+.equ KEYPADDDR = DDRK
 
 .dseg
-keypad_callback: .db 0,0
+keypad_callback: .byte 2
 
 .cseg
 
@@ -65,7 +65,7 @@ jmp keypad_eof
 init_keypad:
 	push temp1
 	ldi temp1, PORTDIR
-	sts DDRL, temp1
+	sts KEYPADDDR, temp1
 	pop temp1
 	ret
 
