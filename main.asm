@@ -11,6 +11,7 @@ includes:
 .include "keypad.asm"
 .include "timer.asm"
 .include "turntable.asm"
+.include "magnetron.asm"
 jmp main
 
 .def mode = r20
@@ -150,6 +151,7 @@ start:
 	store mode
 	call timer_on
 	call turntable_start
+	call motor_on
 	pop mode
 	pop r16
 	pop seconds
@@ -170,6 +172,7 @@ unpause:
 	store mode
 	call timer_on
 	call turntable_start
+	call motor_on
 	pop mode
 	ret
 
@@ -271,6 +274,7 @@ pause:
 	push mode
 	call timer_off
 	call turntable_stop
+	call motor_off
 	ldi mode, PAUSED
 	store mode
 	pop mode
@@ -418,6 +422,7 @@ timer_fired:
 	timer_zero:
 	call timer_off
 	call turntable_stop
+	call motor_off
 	push numdigits
 	clr numdigits
 	store numdigits
