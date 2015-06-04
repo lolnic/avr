@@ -96,6 +96,33 @@ main:
 			jmp poll_loop
 		
 
+normalise_time:
+	push minutes
+	push seconds
+
+	load minutes
+	load seconds
+
+	normalise_loop:
+		; We can't do anything if minutes is at the limit
+		cpi minutes, 99
+		breq end_normalise_time
+
+		cpi seconds, 60
+		brlt end_normalise_time
+		subi seconds, 60
+		inc minutes
+		jmp normalise_loop
+
+
+	end_normalise_time:
+	store minutes
+	store seconds
+
+	pop seconds
+	pop minutes
+	ret
+
 add_minute:
 	push minutes
 	load minutes
@@ -260,7 +287,58 @@ running_key_pressed:
 	rcall pause
 
 	running_nothash:
+	cpi r16, 'C'
+	brne running_notc
+	rcall add_30
 
+	running_notc:
+	cpi r16, 'D'
+	brne running_notd
+	rcall sub_30
+
+	running_notd:
+
+	ret
+
+add_30:
+	push seconds
+
+	load seconds
+
+	subi seconds, -30
+	store seconds
+	call normalise_time
+
+	pop seconds
+	ret
+
+sub_30:
+	push seconds
+	push minutes
+
+	load minutes
+	load seconds
+
+	cpi seconds, 30
+	brge subtract
+
+	cpi minutes, 1
+	brlt end_sub_30 ; There is less than 30 seconds of time
+
+	dec minutes
+	subi seconds, -60
+
+	subtract:
+
+	subi seconds, 30
+	store minutes
+	store seconds
+
+	call normalise_time
+
+	end_sub_30:
+	pop minutes
+	pop seconds
 	ret
 
 set_min_sec: ; arg r17 = number of digits in time
