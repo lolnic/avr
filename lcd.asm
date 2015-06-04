@@ -52,6 +52,29 @@ rjmp lcd_eof
 	do_lcd_command (0b10000000 | 55)
 .endmacro
 
+; Prints a string from program memory
+.macro lcd_print_str
+	push zh
+	push zl
+	push r20
+
+	ldi zh, high(@0<<1)
+	ldi zl, low(@0<<1)
+
+	lpm r20, Z+
+	loop:
+		cpi r20, 0
+		breq endloop
+		do_lcd_data_reg r20
+		lpm r20, Z+
+		jmp loop
+	endloop:
+
+	pop r20
+	pop zl
+	pop zh
+.endmacro
+
 .macro lcd_lte_99 ; data_reg
 	.def data_reg = @0
 	; tens

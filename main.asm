@@ -18,6 +18,7 @@ jmp main
 .def minutes = r21
 .def seconds = r22
 .def lcd_dirty = r26
+.def power_level_updated = r26
 .def numdigits = r17
 .def timer_count = r17
 .equ ENTRY = 1
@@ -35,8 +36,11 @@ lcd_dirty_mem: .byte 1
 minutes_mem: .byte 1
 seconds_mem: .byte 1
 timer_count_mem: .byte 1
+power_level_updated_mem: .byte 1
 end_dseg:
 .cseg
+
+power_level_str: .db "Set Power 1/2/3",0
 
 main:
 	; Init callbacks
@@ -95,6 +99,46 @@ main:
 			clr lcd_dirty
 			store lcd_dirty
 			jmp poll_loop
+
+user_new_power_level:
+	push power_level_updated
+
+	cpi r16, '1'
+	breq set_num
+	cpi r16, '2'
+	breq set_num
+	cpi r16, '3'
+	breq set_num
+	cpi r16, '#'
+	brne end_user_new_power_level
+	jmp user_chose
+
+	set_num:
+		subi r16, '0'
+		call magnetron_set_power_level
+
+	user_chose:
+	ser power_level_updated
+	store power_level_updated
+	set_keypad_callback key_pressed
+	end_user_new_power_level:
+	pop power_level_updated
+	ret
+
+get_new_power_level:
+	push power_level_updated
+	clr power_level_updated
+	store power_level_updated
+	set_keypad_callback user_new_power_level
+	lcd_clear
+	lcd_print_str power_level_str
+	poll_loop_2:
+		call poll_keypad_once
+		load power_level_updated
+		cpi power_level_updated, 0xFF
+		brne poll_loop_2
+	pop power_level_updated
+	ret
 		
 
 normalise_time:
@@ -151,7 +195,7 @@ start:
 	store mode
 	call timer_on
 	call turntable_start
-	call motor_on
+	call magnetron_on
 	pop mode
 	pop r16
 	pop seconds
@@ -172,7 +216,7 @@ unpause:
 	store mode
 	call timer_on
 	call turntable_start
-	call motor_on
+	call magnetron_on
 	pop mode
 	ret
 
@@ -258,6 +302,11 @@ entry_key_pressed:
 	rcall stop_entry
 
 	entry_nothash:
+	cpi r16, 'A'
+	brne entry_nota
+	rcall get_new_power_level
+
+	entry_nota:
 
 	end_entry_key:
 	ldi lcd_dirty, 1
@@ -274,7 +323,7 @@ pause:
 	push mode
 	call timer_off
 	call turntable_stop
-	call motor_off
+	call magnetron_off
 	ldi mode, PAUSED
 	store mode
 	pop mode
@@ -422,7 +471,7 @@ timer_fired:
 	timer_zero:
 	call timer_off
 	call turntable_stop
-	call motor_off
+	call magnetron_off
 	push numdigits
 	clr numdigits
 	store numdigits
