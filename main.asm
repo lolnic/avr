@@ -41,6 +41,8 @@ end_dseg:
 .cseg
 
 power_level_str: .db "Set Power 1/2/3",0
+done_str: .db "Done",0
+remove_str: .db "Remove food",0
 
 main:
 	; Init callbacks
@@ -79,6 +81,19 @@ main:
 
 		render_lcd:
 			lcd_clear
+			clr lcd_dirty
+			store lcd_dirty
+
+			push mode
+			load mode
+			cpi mode, FINISHED
+			brne continue_render
+			lcd_print_str done_str
+			lcd_bot_left
+			lcd_print_str remove_str
+			jmp poll_loop
+
+			continue_render:
 
 			load minutes
 			load seconds
@@ -95,9 +110,6 @@ main:
 			turntable_status r17
 			do_lcd_data_reg r17
 
-
-			clr lcd_dirty
-			store lcd_dirty
 			jmp poll_loop
 
 user_new_power_level:
@@ -244,6 +256,13 @@ paused_key_pressed:
 	ret
 
 finished_key_pressed:
+	cpi r16, '#'
+	brne noop
+	push mode
+	ldi mode, ENTRY
+	store mode
+	pop mode
+	noop:
 	ret
 
 ; Callback for when the keypad is pressed.
@@ -435,32 +454,37 @@ set_min_sec: ; arg r17 = number of digits in time
 	ret
 
 timer_fired:
+	push lcd_dirty
+	push timer_count
+	push minutes
+	push seconds
+	push numdigits
+	push mode
+
 	call turntable_250ms_tick
 	call magnetron_250ms_tick
-	ldi lcd_dirty, 1
-	store lcd_dirty
 
 	; Only continue if it's been one second
-	push timer_count
 	load timer_count
 	inc timer_count
 	store timer_count
 	cpi timer_count, 4
 	breq one_second
-	pop timer_count
-	ret
+	jmp timer_ret
 
 	one_second:
+
+	ldi lcd_dirty, 1
+	store lcd_dirty
 	clr timer_count
 	store timer_count
-	pop timer_count
 	load minutes
 	load seconds
 	cpi seconds, 0
 	breq do_minutes
 	dec seconds
 	store seconds
-	ret
+	jmp timer_ret
 	do_minutes:
 	cpi minutes, 0
 	breq timer_zero
@@ -468,13 +492,21 @@ timer_fired:
 	dec minutes
 	store minutes
 	store seconds
-	ret
+	jmp timer_ret
 	timer_zero:
 	call timer_off
 	call turntable_stop
 	call magnetron_off
-	push numdigits
 	clr numdigits
 	store numdigits
+	ldi mode, FINISHED
+	store mode
+
+	timer_ret:
+	pop mode
 	pop numdigits
+	pop seconds
+	pop minutes
+	pop timer_count
+	pop lcd_dirty
 	ret
