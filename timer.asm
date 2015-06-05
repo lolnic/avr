@@ -67,7 +67,7 @@ jmp timer_eof
 .endmacro
 
 Timer0OVF: ; interrupt subroutine to Timer0
-	;push temp ; Prologue starts.
+	push temp ; Prologue starts.
 	in temp, SREG
 	push temp 
 	push YH ; Save all conflict registers in the prologue.
@@ -105,7 +105,7 @@ Timer0OVF: ; interrupt subroutine to Timer0
 	pop YH
 	pop temp
 	out SREG, temp
-	;pop temp
+	pop temp
 	reti ; Return from the interrupt.
 
 timer_on:

@@ -80,6 +80,10 @@ main:
 	ldi mode, ENTRY
 	store mode
 
+	; door is initially closed
+	ldi door_state, 'C'
+	store door_state
+
 	poll_loop:
 		; Poll the keypad
 		call poll_keypad_once
@@ -121,10 +125,51 @@ main:
 			turntable_status r17
 			do_lcd_data_reg r17
 
+			lcd_bot_right
+			load door_state
+			do_lcd_data_reg door_state
+
 			jmp poll_loop
 
 push_button_down:
-	led_set_lights 8
+	push door_state
+	push mode
+	push lcd_dirty
+	load door_state
+	load mode
+	cpi r16, 0
+	breq close
+
+	open:
+		cpi door_state, 'O'
+		breq done
+		cpi mode, FINISHED
+		brne notfinished
+		ldi mode, ENTRY
+		store mode
+		notfinished:
+		cpi mode, RUNNING
+		brne notrunning
+		call pause
+		notrunning:
+		ldi door_state, 'O'
+		store door_state
+		door_light_on
+		jmp done
+	close:
+		cpi door_state, 'C'
+		breq done
+		ldi door_state, 'C'
+		store door_state
+		door_light_off
+		jmp done
+		
+	done:
+	ldi lcd_dirty, 1
+	store lcd_dirty
+	pop lcd_dirty
+	pop mode
+	pop door_state
 	ret
 
 user_new_power_level:
@@ -283,6 +328,15 @@ finished_key_pressed:
 ; Callback for when the keypad is pressed.
 ; The ascii value of the key hit is in r16
 key_pressed:
+	push door_state
+	load door_state
+	cpi door_state, 'O'
+	brne handle_key_press
+	pop door_state
+	ret
+
+	handle_key_press:
+	pop door_state
 	ldi lcd_dirty, 1
 	store lcd_dirty
 	; Jump to subroutine based on mode

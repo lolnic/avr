@@ -43,17 +43,34 @@ jmp pushbutton_init
 
 
 pb0_int:
+	push temp ; Prologue starts.
+	in temp, SREG
+	push temp
+
 	push r16
 	ldi r16, 0
 	call_pushbutton_callback
 	pop r16
+
+	pop temp
+	out SREG, temp
+	pop temp
+
 	reti
 
 pb1_int:
+	push temp ; Prologue starts.
+	in temp, SREG
+	push temp
+
 	push r16
 	ldi r16, 1
 	call_pushbutton_callback
 	pop r16
+
+	pop temp
+	out SREG, temp
+	pop temp
 	reti
 
 pushbutton_init:
