@@ -1,8 +1,4 @@
 ; LCD driver
-; Initialises the LCD and provides helper methods for
-; interacting with the LCD and formatting strings and numbers
-; Assumes:
-;  * The stack is initialised
 
 rcall lcd_init
 rjmp lcd_eof
@@ -75,6 +71,9 @@ rjmp lcd_eof
 	pop zh
 .endmacro
 
+; Prints a number less than or equal to 99
+; Pads with zeros if the number is less than 10
+; Behaves badly if number exceeds 99
 .macro lcd_lte_99 ; data_reg
 	.def data_reg = @0
 	; tens
@@ -98,6 +97,8 @@ rjmp lcd_eof
 	.undef data_reg
 .endmacro
 
+
+; Output a time in M:S format
 lcd_time: ; r16 = minutes
 	      ; r17 = seconds
 	lcd_lte_99 r16

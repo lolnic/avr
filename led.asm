@@ -1,3 +1,5 @@
+; LED driver
+
 .include "m2560def.inc"
 
 .def temp = r16
@@ -5,6 +7,7 @@
 jmp led_init
 
 led_init:
+	; Prepare LED ports for output
 	ser temp
 	out DDRC, temp
 	out DDRE, temp
@@ -18,6 +21,7 @@ led_init:
 	pop temp
 .endmacro
 
+; Turns the door light (topmost LED) on
 .macro door_light_on
 	push temp
 	ser temp
@@ -25,6 +29,7 @@ led_init:
 	pop temp
 .endmacro
 
+; Turns the door light (topmost LED) off
 .macro door_light_off
 	push temp
 	clr temp

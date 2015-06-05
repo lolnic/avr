@@ -1,3 +1,7 @@
+; Driver for the fictional turntable device
+; The turntable is meant to be visible on the LCD,
+; the logic for this is in main.asm
+
 .include "m2560def.inc"
 
 .dseg
@@ -25,6 +29,8 @@ rot: .db "-/|",0,"-/|",0
 .def rotation = r28
 .def direction = r29
 
+; Get the ascii representation of the turntable status and store it in
+; the given register
 .macro turntable_status ; output register
 	push zh
 	push zl
@@ -46,6 +52,7 @@ rot: .db "-/|",0,"-/|",0
 	pop zh
 .endmacro
 
+; Initialise the turntabele
 turntable_init:
 	clr rotation
 	store rotation
@@ -57,6 +64,7 @@ turntable_init:
 	store on
 	jmp turntable_eof
 
+; Move the turntable one tick forwards
 rotate_forwards:
 	load rotation
 	cpi rotation, NUM_ROT_CHARS-1
@@ -71,6 +79,7 @@ rotate_forwards:
 	store rotation
 	ret
 
+; Move the turntable one tick backwards
 rotate_backwards:
 	load rotation
 	cpi rotation, 0
@@ -85,6 +94,8 @@ rotate_backwards:
 	store rotation
 	ret
 
+; Call to tell the turntable that 250ms has passed.
+; May change the amount the turntable has rotated
 turntable_250ms_tick:
 	push on
 	push waiting
@@ -120,6 +131,7 @@ turntable_250ms_tick:
 	pop on
 	ret
 
+; Change turntable direction, then start turning
 turntable_start:
 	call turntable_switch_direction
 	push on
@@ -129,6 +141,7 @@ turntable_start:
 	pop on
 	ret
 
+; Toggle the turntable direction
 turntable_switch_direction:
 	push direction
 	push waiting
@@ -150,6 +163,7 @@ turntable_switch_direction:
 
 	ret
 
+; Stop the turntable from turning
 turntable_stop:
 	push on
 	load on

@@ -1,3 +1,7 @@
+; Main program logic
+; Responsible for any behaviour which is not interfacing
+; directly with hardware
+
 .include "m2560def.inc"
 
 jmp includes
@@ -131,6 +135,7 @@ main:
 
 			jmp poll_loop
 
+; Called when one of the push buttons is pressed
 push_button_down:
 	push door_state
 	push mode
@@ -174,6 +179,8 @@ push_button_down:
 	pop door_state
 	ret
 
+; Used as a temporary keypad callback when the user is
+; choosing the power level
 user_new_power_level:
 	push power_level_updated
 
@@ -199,6 +206,7 @@ user_new_power_level:
 	pop power_level_updated
 	ret
 
+; Called when the user requests to change the power level
 get_new_power_level:
 	push power_level_updated
 	clr power_level_updated
@@ -214,7 +222,8 @@ get_new_power_level:
 	pop power_level_updated
 	ret
 		
-
+; Changes the time to be in a better format if possible
+; for instance 1:90 is changed to 2:30
 normalise_time:
 	push minutes
 	push seconds
@@ -242,6 +251,7 @@ normalise_time:
 	pop minutes
 	ret
 
+; Adds a minute to the running time
 add_minute:
 	push minutes
 	load minutes
@@ -250,6 +260,7 @@ add_minute:
 	pop minutes
 	ret
 
+; Starts the microwave
 start:
 	push r16
 	push minutes
@@ -276,6 +287,7 @@ start:
 	pop minutes
 	ret
 
+; When the stop key is pressed in entry mode
 stop_entry:
 	push numdigits
 	clr numdigits
@@ -284,6 +296,7 @@ stop_entry:
 	pop numdigits
 	ret
 
+; Called when cooking is paused and needs to be restarted
 unpause:
 	push mode
 	ldi mode, RUNNING
@@ -294,6 +307,8 @@ unpause:
 	pop mode
 	ret
 
+; Called when the microwave has finished cooking and needs to
+; be ready to cook something else
 restart:
 	push numdigits
 	push mode
@@ -306,6 +321,7 @@ restart:
 	pop numdigits
 	ret
 
+; When a key is pressed while in pause mode
 paused_key_pressed:
 	cpi r16, '*'
 	brne paused_notstar
@@ -317,6 +333,7 @@ paused_key_pressed:
 	paused_nothash:
 	ret
 
+; When a key is pressed while in finished mode
 finished_key_pressed:
 	cpi r16, '#'
 	brne noop
@@ -351,6 +368,7 @@ key_pressed:
 	breq paused_key_pressed
 	jmp finished_key_pressed
 
+; When a key is pressed while in entry mode
 entry_key_pressed:
 	push numdigits
 	push xl
@@ -409,6 +427,7 @@ entry_key_pressed:
 	pop r17
 	ret
 
+; When the microwave is cooking and needs to be paused
 pause:
 	push mode
 	call timer_off
@@ -419,6 +438,7 @@ pause:
 	pop mode
 	ret
 
+; When in running mode and a key is pressed
 running_key_pressed:
 	cpi r16, '*'
 	brne running_notstar
@@ -443,6 +463,7 @@ running_key_pressed:
 
 	ret
 
+; Add 30 seconds to the running time
 add_30:
 	push seconds
 
@@ -455,6 +476,7 @@ add_30:
 	pop seconds
 	ret
 
+; Subtract 30 seconds from the running time
 sub_30:
 	push seconds
 	push minutes
@@ -484,6 +506,7 @@ sub_30:
 	pop seconds
 	ret
 
+; Convert user input into minutes and seconds
 set_min_sec: ; arg r17 = number of digits in time
 	push r24
 	push r18
@@ -524,6 +547,7 @@ set_min_sec: ; arg r17 = number of digits in time
 	pop r24
 	ret
 
+; Called when the timer is fired.
 timer_fired:
 	push lcd_dirty
 	push timer_count

@@ -1,3 +1,6 @@
+; Driver for the fictional magnetron.
+; Actually interfaces with the motor and LED drivers
+
 .include "m2560def.inc"
 .include "motor.asm"
 .include "led.asm"
@@ -15,6 +18,7 @@
 
 jmp magnetron_init
 
+; Set up the magnetron's data
 magnetron_init:
 	ldi r16, LO
 	call magnetron_set_power_level
@@ -23,6 +27,8 @@ magnetron_init:
 	store tick
 	jmp magnetron_eof
 
+; Sets the power level of the magnetron
+; power level must be one of LO, MD, HI
 magnetron_set_power_level: ; r16 = new power level
 	push power_level
 	mov power_level, r16
@@ -40,6 +46,8 @@ magnetron_set_power_level: ; r16 = new power level
 	pop power_level
 	ret
 
+; Call to tell the magnetron that 250ms has passed
+; May toggle the on/off state of the motor
 magnetron_250ms_tick:
 	push tick
 	push power_level
@@ -72,6 +80,7 @@ magnetron_250ms_tick:
 	pop tick 
 	ret
 
+; Turns on the magnetron
 magnetron_on:
 	push power_level
 	load power_level
@@ -82,6 +91,7 @@ magnetron_on:
 	pop power_level
 	ret
 
+; Turns off the magnetron
 magnetron_off:
 	call motor_off
 	ret

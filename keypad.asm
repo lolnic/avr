@@ -1,3 +1,5 @@
+; Keypad driver
+
 .include "m2560def.inc"
 
 .def row = r16 ; current row number
@@ -24,6 +26,7 @@ keypad_callback: .byte 2
 call init_keypad
 jmp keypad_eof
 
+; Call the callback for when a keypad button is pressed
 .macro call_keypad_callback; char_pressed
 	push r16
 	mov r16, @0
@@ -47,6 +50,7 @@ jmp keypad_eof
 	pop r16
 .endmacro
 
+; Set up the callback
 .macro set_keypad_callback; label
 	push zh
 	push zl
@@ -62,6 +66,7 @@ jmp keypad_eof
 	pop zh
 .endmacro
 
+; Prepare the keypad for reading
 init_keypad:
 	push temp1
 	ldi temp1, PORTDIR
@@ -69,6 +74,10 @@ init_keypad:
 	pop temp1
 	ret
 
+; Check if the keypad is being pressed
+; if it isn't, return
+; If it is, wait for the key to stop being pressed
+; and call the callback function
 poll_keypad_once:
 	push row
 	push col
@@ -82,6 +91,7 @@ poll_keypad_once:
 	ser finalrow
 	ser finalcol
 
+	; Loop until a button is not being pressed
 	debounce_poll:
 		ldi cmask, INITCOLMASK ; initial column mask
 		clr col ; initial column
@@ -114,6 +124,7 @@ poll_keypad_once:
 				jmp rowloop
 
 			found_key:
+			; We found a key that was pressed. Record it.
 			mov finalrow, row
 			mov finalcol, col
 			jmp debounce_poll
@@ -125,10 +136,13 @@ poll_keypad_once:
 	debounced:
 		mov row, finalrow
 		mov col, finalcol
+		; Check if finalrow is the default value
+		; If it is, a key was never pressed
 		cpi finalrow, 0xFF
 		breq poll_ret
 
 
+	; Convert the (row, col) coordinates to ascii chars
 	convert:
 		cpi col, 3 ; If the pressed key is in col.3
 		breq letters ; we have a letter

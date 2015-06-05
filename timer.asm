@@ -1,3 +1,5 @@
+; Code to interface with timer0
+
 .include "m2560def.inc"
 
 .equ OVERFLOWS_PER_CALLBACK = 7812/4
