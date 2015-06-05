@@ -155,6 +155,8 @@ push_button_down:
 		ldi door_state, 'O'
 		store door_state
 		door_light_on
+		ldi lcd_dirty, 1
+		store lcd_dirty
 		jmp done
 	close:
 		cpi door_state, 'C'
@@ -162,11 +164,11 @@ push_button_down:
 		ldi door_state, 'C'
 		store door_state
 		door_light_off
+		ldi lcd_dirty, 1
+		store lcd_dirty
 		jmp done
 		
 	done:
-	ldi lcd_dirty, 1
-	store lcd_dirty
 	pop lcd_dirty
 	pop mode
 	pop door_state

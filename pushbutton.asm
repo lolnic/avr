@@ -47,6 +47,12 @@ pb0_int:
 	in temp, SREG
 	push temp
 
+	; disable int0, enable int1
+	in temp, EIMSK
+	andi temp, ~(1<<INT0)
+	ori temp, (1<<INT1)
+	out EIMSK, temp
+
 	push r16
 	ldi r16, 0
 	call_pushbutton_callback
@@ -63,6 +69,12 @@ pb1_int:
 	in temp, SREG
 	push temp
 
+	; disable int1, enable int0
+	in temp, EIMSK
+	andi temp, ~(1<<INT1)
+	ori temp, (1<<INT0)
+	out EIMSK, temp
+
 	push r16
 	ldi r16, 1
 	call_pushbutton_callback
@@ -78,7 +90,7 @@ pushbutton_init:
 	ldi temp, (2 << ISC00) ; set INT0 as falling
 	sts EICRB, temp ; edge triggered interrupt
 	in temp, EIMSK ; enable INT0
-	ori temp, (1<<INT0)
+	;ori temp, (1<<INT0)
 	ori temp, (1<<INT1)
 	out EIMSK, temp
 
