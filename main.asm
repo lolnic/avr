@@ -1,6 +1,13 @@
 .include "m2560def.inc"
 
 jmp includes
+
+.org INT0addr
+jmp pb0_int
+
+.org INT1addr
+jmp pb1_int
+
 .org OVF0addr
 jmp Timer0OVF ; Jump to the interrupt handler for
 ; Timer0 overflow.
@@ -12,6 +19,7 @@ includes:
 .include "timer.asm"
 .include "turntable.asm"
 .include "magnetron.asm"
+.include "pushbutton.asm"
 jmp main
 
 .def mode = r20
@@ -19,6 +27,7 @@ jmp main
 .def seconds = r22
 .def lcd_dirty = r26
 .def power_level_updated = r26
+.def door_state = r27
 .def numdigits = r17
 .def timer_count = r17
 .equ ENTRY = 1
@@ -37,6 +46,7 @@ minutes_mem: .byte 1
 seconds_mem: .byte 1
 timer_count_mem: .byte 1
 power_level_updated_mem: .byte 1
+door_state_mem: .byte 1
 end_dseg:
 .cseg
 
@@ -48,6 +58,7 @@ main:
 	; Init callbacks
 	set_keypad_callback key_pressed
 	set_timer_callback timer_fired
+	set_pushbutton_callback push_button_down
 
 
 	; zero memory
@@ -111,6 +122,10 @@ main:
 			do_lcd_data_reg r17
 
 			jmp poll_loop
+
+push_button_down:
+	led_set_lights 8
+	ret
 
 user_new_power_level:
 	push power_level_updated
